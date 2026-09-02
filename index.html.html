@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بيانات سكان العقار</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f4efe6;
+    --paper: #ffffff;
+    --ink: #22303a;
+    --ink-soft: #5b6b74;
+    --line: #dcd3c2;
+    --teal: #0e5c53;
+    --teal-deep: #0a453e;
+    --brass: #b9863e;
+    --window-off: #ece4d4;
+    --window-lit: #f3c969;
+    --error: #b3432f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(14,92,83,0.05), transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(185,134,62,0.06), transparent 40%);
+    color: var(--ink);
+    font-family: 'Cairo', 'Tahoma', sans-serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px 64px;
+  }
+  .page{
+    width:100%;
+    max-width: 460px;
+  }
+  .masthead{
+    text-align:center;
+    margin-bottom: 22px;
+  }
+  .masthead .eyebrow{
+    font-size: 13px;
+    color: var(--brass);
+    font-weight:600;
+    letter-spacing:0.3px;
+    margin-bottom:6px;
+  }
+  .masthead h1{
+    font-size: 26px;
+    font-weight:800;
+    margin:0 0 8px;
+    color: var(--teal-deep);
+  }
+  .masthead p{
+    font-size: 14.5px;
+    color: var(--ink-soft);
+    margin:0;
+    line-height:1.7;
+  }
+
+  /* Building facade */
+  .facade-wrap{
+    background: linear-gradient(180deg, #163a44 0%, #10262d 100%);
+    border-radius: 18px 18px 6px 6px;
+    padding: 22px 20px 0;
+    position:relative;
+    overflow:hidden;
+  }
+  .facade-wrap::before{
+    content:"";
+    position:absolute;
+    top:0; right:0; left:0;
+    height:10px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 10px, transparent 10px 20px);
+  }
+  .roofline{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    padding-bottom: 12px;
+  }
+  .roofline span{
+    width:10px; height:14px;
+    background: var(--brass);
+    opacity:0.7;
+    border-radius: 2px 2px 0 0;
+  }
+  .roofline span:nth-child(2n){ height:10px; opacity:0.45; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 4px 6px 20px;
+  }
+  .win{
+    aspect-ratio: 1 / 1.05;
+    border-radius: 5px;
+    border: 1.5px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.55);
+    font-weight:600;
+    font-size: 15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    position:relative;
+  }
+  .win:hover{
+    background: rgba(255,255,255,0.14);
+    color:#fff;
+  }
+  .win.taken{
+    background: var(--window-lit);
+    color: #4a3410;
+    border-color: rgba(0,0,0,0.05);
+    box-shadow: 0 0 10px rgba(243,201,105,0.55);
+  }
+  .win.selected{
+    background: var(--brass);
+    color: #fff;
+    border-color: var(--brass);
+    transform: scale(1.06);
+    box-shadow: 0 0 0 3px rgba(185,134,62,0.35);
+  }
+  .win:focus-visible{
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  .door{
+    display:flex;
+    justify-content:center;
+    padding-bottom: 14px;
+  }
+  .door span{
+    width: 34px; height: 26px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 5px 5px 0 0;
+    border: 1.5px solid rgba(255,255,255,0.15);
+  }
+
+  .apt-status{
+    text-align:center;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 14px 0 20px;
+  }
+  .apt-status b{
+    color: var(--teal-deep);
+    font-weight:700;
+  }
+
+  /* Form card */
+  .card{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 20px 24px;
+    margin-top: -14px;
+    position:relative;
+    z-index: 1;
+  }
+  .field{
+    margin-bottom: 16px;
+  }
+  .field label{
+    display:block;
+    font-size: 13.5px;
+    font-weight:600;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .field input{
+    width:100%;
+    padding: 11px 13px;
+    border-radius: 9px;
+    border: 1.5px solid var(--line);
+    font-family:inherit;
+    font-size: 15px;
+    background: #fbfaf7;
+    color: var(--ink);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .field input:focus{
+    outline:none;
+    border-color: var(--teal);
+    background: #fff;
+  }
+  .field .err{
+    display:none;
+    color: var(--error);
+    font-size: 12.5px;
+    margin-top: 5px;
+  }
+  .field.invalid input{ border-color: var(--error); }
+  .field.invalid .err{ display:block; }
+
+  .toggle-group{
+    display:flex;
+    gap:10px;
+  }
+  .toggle-option{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding: 11px 10px;
+    border-radius: 9px;
+    border: 1.5px solid var(--line);
+    background: #fbfaf7;
+    font-size: 14.5px;
+    font-weight:600;
+    color: var(--ink-soft);
+    cursor:pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .toggle-option input{
+    accent-color: var(--teal);
+    margin:0;
+  }
+  .toggle-option:hover{ border-color: var(--teal); }
+  .toggle-option.checked{
+    background: rgba(14,92,83,0.08);
+    border-color: var(--teal);
+    color: var(--teal-deep);
+  }
+  .field.invalid .toggle-option{ border-color: var(--error); }
+
+  .submit-btn{
+    width:100%;
+    padding: 13px;
+    border:none;
+    border-radius: 10px;
+    background: var(--teal);
+    color:#fff;
+    font-family:inherit;
+    font-size: 16px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top: 4px;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .submit-btn:hover{ background: var(--teal-deep); }
+  .submit-btn:active{ transform: scale(0.99); }
+  .submit-btn:disabled{ background:#a9b2ad; cursor:not-allowed; }
+
+  .note{
+    text-align:center;
+    font-size:12.5px;
+    color: var(--ink-soft);
+    margin-top:14px;
+    line-height:1.6;
+  }
+
+  .success{
+    display:none;
+    text-align:center;
+    padding: 30px 10px 6px;
+  }
+  .success .icon{
+    width:54px;height:54px;border-radius:50%;
+    background: var(--teal);
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;
+    margin: 0 auto 14px;
+  }
+  .success h2{
+    margin:0 0 6px;
+    font-size:19px;
+    color:var(--teal-deep);
+  }
+  .success p{
+    margin:0 0 18px;
+    font-size:14px;
+    color: var(--ink-soft);
+    line-height:1.7;
+  }
+  .again-btn{
+    background:none;
+    border: 1.5px solid var(--teal);
+    color: var(--teal);
+    font-family:inherit;
+    font-weight:600;
+    font-size:14px;
+    padding: 9px 18px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .again-btn:hover{ background: rgba(14,92,83,0.06); }
+
+  .loading-note{
+    text-align:center;
+    color: rgba(255,255,255,0.5);
+    font-size:12px;
+    padding-bottom:14px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <div class="eyebrow">استمارة تسجيل</div>
+    <h1>بيانات سكان العقار</h1>
+    <p>الرجاء إدخال بياناتك واختيار رقم شقتك من واجهة المبنى أدناه (24 شقة)</p>
+  </div>
+
+  <div class="facade-wrap">
+    <div class="roofline">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="loading-note" id="loadingNote">جارٍ تحميل حالة الشقق...</div>
+    <div class="door"><span></span></div>
+  </div>
+
+  <div class="apt-status" id="aptStatus">لم يتم اختيار رقم الشقة بعد</div>
+
+  <div class="card">
+    <form id="residentForm">
+      <div class="field" id="nameField">
+        <label for="fullName">الاسم الكامل</label>
+        <input type="text" id="fullName" placeholder="مثال: أحمد محمد علي" autocomplete="name">
+        <div class="err">الرجاء إدخال الاسم الكامل</div>
+      </div>
+
+      <div class="field" id="phoneField">
+        <label for="phone">رقم الهاتف</label>
+        <input type="tel" id="phone" placeholder="01xxxxxxxxx" autocomplete="tel" inputmode="tel">
+        <div class="err">الرجاء إدخال رقم هاتف صحيح</div>
+      </div>
+
+      <div class="field" id="emailField">
+        <label for="email">البريد الإلكتروني</label>
+        <input type="email" id="email" placeholder="example@email.com" autocomplete="email">
+        <div class="err">الرجاء إدخال بريد إلكتروني صحيح</div>
+      </div>
+
+      <div class="field" id="statusField">
+        <label>هل أنت مالك أم مستأجر؟</label>
+        <div class="toggle-group">
+          <label class="toggle-option" data-value="مالك">
+            <input type="radio" name="residentStatus" value="مالك"> مالك
+          </label>
+          <label class="toggle-option" data-value="مستأجر">
+            <input type="radio" name="residentStatus" value="مستأجر"> مستأجر
+          </label>
+        </div>
+        <div class="err">الرجاء تحديد صفتك (مالك أو مستأجر)</div>
+      </div>
+
+      <div class="field" id="aptField">
+        <input type="hidden" id="aptNumber" value="">
+        <div class="err">الرجاء اختيار رقم الشقة من الواجهة أعلاه</div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">إرسال البيانات</button>
+    </form>
+
+    <div class="success" id="successBox">
+      <div class="icon">✓</div>
+      <h2>تم تسجيل بياناتك بنجاح</h2>
+      <p id="successMsg"></p>
+      <button class="again-btn" id="againBtn">إرسال بيانات شقة أخرى</button>
+    </div>
+
+    <div class="note">بياناتك تُستخدم فقط لأغراض التواصل الخاصة بإدارة العقار</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Paste the Web app URL you copied from Apps Script deployment (ends in /exec)
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7MAVkiFpfywt7_-_ydH0mBdS2rMQmsDq80PxAhJ32n_iE8vfC4WFuAgmah8kivwEISw/exec';
+
+  const TOTAL = 24;
+  const grid = document.getElementById('grid');
+  const aptStatus = document.getElementById('aptStatus');
+  const aptField = document.getElementById('aptField');
+  const aptNumberInput = document.getElementById('aptNumber');
+  const loadingNote = document.getElementById('loadingNote');
+  const form = document.getElementById('residentForm');
+  const successBox = document.getElementById('successBox');
+  const successMsg = document.getElementById('successMsg');
+  const againBtn = document.getElementById('againBtn');
+  const submitBtn = document.getElementById('submitBtn');
+
+  let takenApts = new Set();
+  let selectedApt = null;
+
+  const statusOptions = document.querySelectorAll('.toggle-option');
+  const statusField = document.getElementById('statusField');
+  statusOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      statusOptions.forEach(o => o.classList.remove('checked'));
+      opt.classList.add('checked');
+      opt.querySelector('input').checked = true;
+      statusField.classList.remove('invalid');
+    });
+  });
+  function getSelectedStatus(){
+    const checked = document.querySelector('input[name="residentStatus"]:checked');
+    return checked ? checked.value : null;
+  }
+
+  function buildGrid(){
+    grid.innerHTML = '';
+    for(let i=1; i<=TOTAL; i++){
+      const btn = document.createElement('div');
+      btn.className = 'win';
+      btn.textContent = i;
+      btn.setAttribute('role','button');
+      btn.setAttribute('tabindex','0');
+      btn.dataset.apt = i;
+      if(takenApts.has(i)) btn.classList.add('taken');
+      btn.addEventListener('click', () => selectApt(i));
+      btn.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectApt(i); }
+      });
+      grid.appendChild(btn);
+    }
+  }
+
+  function selectApt(n){
+    selectedApt = n;
+    aptNumberInput.value = n;
+    aptField.classList.remove('invalid');
+    document.querySelectorAll('.win').forEach(w => w.classList.remove('selected'));
+    const el = grid.querySelector('[data-apt="' + n + '"]');
+    if(el) el.classList.add('selected');
+    const already = takenApts.has(n);
+    aptStatus.innerHTML = 'الشقة المختارة: <b>' + n + '</b>' + (already ? ' — تم تسجيل بيانات لهذه الشقة من قبل' : '');
+  }
+
+  async function loadTakenApartments(){
+    try{
+      const res = await fetch(SCRIPT_URL);
+      const data = await res.json();
+      if(data && Array.isArray(data.taken)){
+        data.taken.forEach(n => takenApts.add(n));
+      }
+    }catch(e){
+      // backend not reachable yet (e.g. URL not configured) — proceed with empty state
+    }
+    loadingNote.style.display = 'none';
+    buildGrid();
+  }
+
+  function validateField(fieldEl, isValid){
+    if(isValid){ fieldEl.classList.remove('invalid'); }
+    else{ fieldEl.classList.add('invalid'); }
+    return isValid;
+  }
+
+  function isValidEmail(v){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+  function isValidPhone(v){
+    const digits = v.replace(/[\s-]/g, '');
+    return /^[0-9+]{8,15}$/.test(digits);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nameEl = document.getElementById('fullName');
+    const phoneEl = document.getElementById('phone');
+    const emailEl = document.getElementById('email');
+
+    const nameOk = validateField(document.getElementById('nameField'), nameEl.value.trim().length >= 2);
+    const phoneOk = validateField(document.getElementById('phoneField'), isValidPhone(phoneEl.value.trim()));
+    const emailOk = validateField(document.getElementById('emailField'), isValidEmail(emailEl.value.trim()));
+    const aptOk = validateField(document.getElementById('aptField'), selectedApt !== null);
+    const selectedStatus = getSelectedStatus();
+    const statusOk = validateField(statusField, selectedStatus !== null);
+
+    if(!(nameOk && phoneOk && emailOk && aptOk && statusOk)) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جارٍ الإرسال...';
+
+    const entry = {
+      name: nameEl.value.trim(),
+      phone: phoneEl.value.trim(),
+      email: emailEl.value.trim(),
+      apartment: selectedApt,
+      status: selectedStatus,
+      submittedAt: new Date().toISOString()
+    };
+
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(entry)
+      });
+      const result = await res.json();
+      if(!result || !result.success){
+        throw new Error('save failed');
+      }
+      takenApts.add(selectedApt);
+      form.style.display = 'none';
+      successMsg.textContent = 'تم حفظ بيانات شقة رقم ' + selectedApt + ' (' + entry.name + ')';
+      successBox.style.display = 'block';
+    }catch(err){
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'إرسال البيانات';
+      alert('حدث خطأ أثناء الحفظ، الرجاء المحاولة مرة أخرى');
+    }
+  });
+
+  againBtn.addEventListener('click', () => {
+    form.reset();
+    selectedApt = null;
+    aptNumberInput.value = '';
+    statusOptions.forEach(o => o.classList.remove('checked'));
+    document.querySelectorAll('.win').forEach(w => w.classList.remove('selected'));
+    document.querySelectorAll('.field').forEach(f => f.classList.remove('invalid'));
+    aptStatus.textContent = 'لم يتم اختيار رقم الشقة بعد';
+    buildGrid();
+    successBox.style.display = 'none';
+    form.style.display = 'block';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'إرسال البيانات';
+  });
+
+  loadTakenApartments();
+})();
+</script>
+</body>
+</html>
