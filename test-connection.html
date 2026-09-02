@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>اختبار الاتصال</title>
+<style>
+  body{ font-family: Tahoma, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
+  button{ padding: 12px 20px; font-size: 16px; cursor: pointer; }
+  pre{ background:#f4f4f4; border:1px solid #ccc; padding:14px; white-space: pre-wrap; word-break: break-word; margin-top:16px; direction: ltr; text-align: left; }
+</style>
+</head>
+<body>
+<h2>اختبار إرسال البيانات</h2>
+<p>اضغط الزر، ثم انسخ كل ما يظهر في المربع أدناه وأرسله لي بالكامل.</p>
+<button id="btn">اختبار الحفظ الآن</button>
+<pre id="out">لم يتم الاختبار بعد...</pre>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8HN9pQI1v2-VIyuEBIlSyBcRKsJAVNqWO75OJMLCc/exec';
+const out = document.getElementById('out');
+const btn = document.getElementById('btn');
+
+btn.addEventListener('click', async () => {
+  out.textContent = 'جارٍ الإرسال...';
+  const testEntry = {
+    name: 'اختبار تجريبي',
+    phone: '01000000000',
+    email: 'test@test.com',
+    apartment: 99,
+    status: 'مالك',
+    submittedAt: new Date().toISOString()
+  };
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(testEntry)
+    });
+    const text = await res.text();
+    out.textContent = 'HTTP status: ' + res.status + '\n\nRaw response body:\n' + text;
+  } catch (err) {
+    out.textContent = 'Fetch threw an error:\n' + err.message + '\n\n' + (err.stack || '');
+  }
+});
+</script>
+</body>
+</html>
