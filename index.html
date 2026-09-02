@@ -499,14 +499,18 @@
     };
 
     try{
-      await fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(entry)
+      const params = new URLSearchParams({
+        name: entry.name,
+        phone: entry.phone,
+        email: entry.email,
+        apartment: String(entry.apartment),
+        status: entry.status
       });
-      // no-cors mode means we can't read Google's response, so we treat
-      // a fetch that didn't throw a network error as a successful save.
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const result = await res.json();
+      if(!result || !result.success){
+        throw new Error('save failed');
+      }
       takenApts.add(selectedApt);
       form.style.display = 'none';
       successMsg.textContent = 'تم حفظ بيانات شقة رقم ' + selectedApt + ' (' + entry.name + ')';
